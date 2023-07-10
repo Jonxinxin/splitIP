@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IP段拆分工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 50px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    .input-container {
+      margin-bottom: 10px;
+    }
+    .input-container label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .input-container textarea {
+      width: 100%;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+    }
+    .result-container {
+      margin-top: 20px;
+    }
+    .result-item {
+      padding: 5px;
+      background-color: #f2f2f2;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
+    .splitIP-button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .copy-button {
+      display: none;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IP段拆分工具</h1>
+    <div class="input-container">
+      <label for="ip-input">请输入IP段（一行一个）：</label>
+      <textarea id="ip-input" rows="5" cols="40"></textarea>
+    </div>
+    <button class="splitIP-button" onclick="splitIP()">拆分</button>
+    <div class="result-container">
+      <h2>拆分结果：</h2>
+      <div id="result"></div>
+    </div>
+    <button class="copy-button" onclick="copyIPs()">复制所有IP</button>
+  </div>
+
+  <script>
+    function splitIP() {
+      var ipInput = document.getElementById('ip-input');
+      var ips = ipInput.value.trim().split('\n');
+      var resultContainer = document.getElementById('result');
+      resultContainer.innerHTML = '';
+
+      for (var i = 0; i < ips.length; i++) {
+        var ip = ips[i].trim();
+        var parts = ip.split('/');
+        var network = parts[0];
+        var subnetMask = parseInt(parts[1].replace('/', ''));
+        var subnetSize = 24;
+        var subnetCount = Math.pow(2, subnetSize - subnetMask);
+
+        var firstIP = convertIP(network);
+        for (var j = 0; j < subnetCount; j++) {
+          var resultItem = document.createElement('div');
+          resultItem.className = 'result-item';
+          resultItem.textContent = firstIP;
+          resultContainer.appendChild(resultItem);
+          firstIP = incrementIP(firstIP, subnetSize);
+        }
+      }
+
+      var copyButton = document.querySelector('.copy-button');
+      copyButton.style.display = 'block';
+    }
+
+    function convertIP(ip) {
+      return ip.split('.').map(function(part) {
+        return parseInt(part);
+      }).join('.');
+    }
+
+    function incrementIP(ip, subnetSize) {
+      var parts = ip.split('.').map(function(part) {
+        return parseInt(part);
+      });
+
+      var increment = Math.pow(2, 32 - subnetSize);
+      parts[3] += increment;
+
+      for (var i = 3; i >= 0; i--) {
+        if (parts[i] > 255) {
+          parts[i] -= 256;
+          if (i > 0) {
+            parts[i - 1]++;
+          }
+        }
+      }
+
+      return parts.join('.');
+    }
+
+    function copyIPs() {
+      var resultContainer = document.getElementById('result');
+      var resultItems = resultContainer.getElementsByClassName('result-item');
+      var ips = [];
+
+      for (var i = 0; i < resultItems.length; i++) {
+        ips.push(resultItems[i].textContent);
+      }
+
+      var tempInput = document.createElement('textarea');
+      tempInput.value = ips.join('\n');
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      showAlert('所有IP已复制到剪贴板！');
+    }
+
+    function showAlert(message) {
+      var alertContainer = document.createElement('div');
+      alertContainer.style.position = 'fixed';
+      alertContainer.style.top = '50%';
+      alertContainer.style.left = '50%';
+      alertContainer.style.transform = 'translate(-50%, -50%)';
+      alertContainer.style.padding = '20px';
+      alertContainer.style.backgroundColor = '#f2f2f2';
+      alertContainer.style.boxShadow = '0 0 5px rgba(0, 0, 0, 0.2)';
+      alertContainer.style.borderRadius = '10px';
+      alertContainer.style.zIndex = '9999';
+
+      var alertMessage = document.createElement('p');
+      alertMessage.textContent = message;
+
+      alertContainer.appendChild(alertMessage);
+      document.body.appendChild(alertContainer);
+
+      setTimeout(function() {
+        document.body.removeChild(alertContainer);
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
